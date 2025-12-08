@@ -79,24 +79,27 @@ The goal is to provide a complete **identity-focused detection workflow** that h
 
  
  Searched 2 Investigate failed or suspicious sign-ins for a specific user/domain
-
-    SigninLogs
-    // Filter for a specific user (replace with actual UPN)
-    | where UserPrincipalName == "" // user/domain
-    // Only show failed or error sign-in attempts (ResultType != 0)
-    | where ResultType != 0
-    // Look back 30 days from the current date/time
-    | where TimeGenerated <= ago(30d)
-    // Select useful fields for investigation
-    | project 
-        TimeGenerated,         // Timestamp of the sign-in attempt
-        UserPrincipalName,     // User account involved in the login
-        IPAddress,             // Source IP address of the sign-in
-        LocationDetails,       // Geo-location (country, city, coordinates)
-        AppDisplayName,        // Application the user attempted to access
-        MfaDetail,             // MFA information (challenge, success, failure)
-        ResultDescription,     // Reason the login failed (e.g., bad password)
-        ResultType             // Numeric result code (0 = success, non-zero = failure)
+ 
+        // Investigate failed or suspicious sign-ins for a specific user/domain
+        SigninLogs
+        // Filter for a specific user (replace with actual UPN)
+        | where UserPrincipalName == ""
+        | where ResultDescription contains "Invalid username or password or Invalid on-premise username or password"
+        // Only show failed or error sign-in attempts (ResultType != 0)
+        | where ResultType != 0
+        // Look back 30 days from the current date/time
+        | where TimeGenerated <= ago(30d)
+        // Select useful fields for investigation
+        | project 
+            TimeGenerated,         // Timestamp of the sign-in attempt
+            UserPrincipalName,     // User account involved in the login
+            IPAddress,             // Source IP address of the sign-in
+            LocationDetails,       // Geo-location (country, city, coordinates)
+            AppDisplayName,        // Application the user attempted to access
+            MfaDetail,             // MFA information (challenge, success, failure)
+            ResultDescription,     // Reason the login failed (e.g., bad password)
+            ResultType             // Numeric result code (0 = success, non-zero = failure)
+ 
     
 ## ❗ Incident Summary — Failed Sign-In Attempt (Azure Portal)
 
