@@ -23,7 +23,7 @@ The project also includes the logic behind creating **custom Microsoft Sentinel 
 
 The goal is to provide a complete **identity-focused detection workflow** that helps SOC teams quickly find, investigate, and respond to authentication threats.
 
-    ### Successful sign-ins login KQ
+    ###  Searched 1 Successful sign-ins login KQ
    
     SigninLogs
     | where ResultType == 0                                      // Successful sign-ins
@@ -77,5 +77,49 @@ The goal is to provide a complete **identity-focused detection workflow** that h
     The user authenticated from a known location using a trusted Windows 10 device, and MFA was successfully completed.  
     No indicators of compromise or anomalies were detected in this authentication event.
 
+ 
+ Searched 2 Investigate failed or suspicious sign-ins for a specific user/domain
 
+    SigninLogs
+    // Filter for a specific user (replace with actual UPN)
+    | where UserPrincipalName == "" // user/domain
+    // Only show failed or error sign-in attempts (ResultType != 0)
+    | where ResultType != 0
+    // Look back 30 days from the current date/time
+    | where TimeGenerated <= ago(30d)
+    // Select useful fields for investigation
+    | project 
+        TimeGenerated,         // Timestamp of the sign-in attempt
+        UserPrincipalName,     // User account involved in the login
+        IPAddress,             // Source IP address of the sign-in
+        LocationDetails,       // Geo-location (country, city, coordinates)
+        AppDisplayName,        // Application the user attempted to access
+        MfaDetail,             // MFA information (challenge, success, failure)
+        ResultDescription,     // Reason the login failed (e.g., bad password)
+        ResultType             // Numeric result code (0 = success, non-zero = failure)
     
+## ❗ Incident Summary — Failed Sign-In Attempt (Azure Portal)
+
+        **Date/Time (UTC):**  
+        2025-11-05 00:21:13
+        
+        **User:** @lognpacific.com  
+        **Application:** Azure Portal  
+        **Result:** Failed authentication (ResultType **50126**)  
+        **Failure Reason:** Invalid username or password (or invalid on-prem AD credentials)
+        
+        **Sign-In Source:**  
+        - **IP Address:** 2601:601:700:130:85ea:3560:b33e:aef  
+        - **Location:** Seattle, Washington, United States  
+          - Latitude: 47.5662  
+          - Longitude: -122.3336  
+        
+        **Analysis:**  
+        This failed sign-in originated from a **Seattle residential IPv6 address**, which aligns with typical user activity. ResultType **50126** indicates incorrect credentials were entered or the identity couldn’t be validated in a hybrid environment.  
+        A single failed attempt may be accidental, but it can also serve as an early indicator of credential misuse if repeated.
+        
+        **Conclusion:**  
+        This appears to be an isolated failed login with no immediate signs of malicious activity. Continued monitoring is recommended—especially for repeated failures or unusual login patterns.
+
+
+<img width="668" height="362" alt="Failed login for all user" src="https://github.com/user-attachments/assets/e304d486-11f6-48a5-ac2e-a383d12c2659" />
