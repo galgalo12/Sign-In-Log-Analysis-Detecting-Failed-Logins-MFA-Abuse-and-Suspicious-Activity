@@ -27,7 +27,7 @@ The goal is to provide a complete **identity-focused detection workflow** that h
    
     SigninLogs
     | where ResultType == 0                                      // Successful sign-ins
-    | where UserPrincipalName == "09ea149d52addb39c065c8c09ca9f216423c7c2ece26c347adeea2deed7162b1@lognpacific.com"
+    | where UserPrincipalName == "lognpacific.com"
     | extend 
           Country = tostring(LocationDetails.countryOrRegion),
           City = tostring(LocationDetails.city),
