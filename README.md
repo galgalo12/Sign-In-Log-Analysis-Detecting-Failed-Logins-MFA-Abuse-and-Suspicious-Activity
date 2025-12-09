@@ -126,3 +126,67 @@ The goal is to provide a complete **identity-focused detection workflow** that h
 
 
 <img width="668" height="362" alt="Failed login for all user" src="https://github.com/user-attachments/assets/e304d486-11f6-48a5-ac2e-a383d12c2659" />
+
+
+After analyzing both failed and successful sign-in attempts, I created a **custom detection rule** in Microsoft Sentinel to monitor suspicious authentication patterns.  Below is the **KQL query** used to implement this detection rule. Additionally, the screenshot demonstrates how the scheduled detection rule was configured in Azure Sentinel.
+
+# 🔔 How to Create an Analytics (Detection) Rule in Microsoft Sentinel
+
+Follow these steps to turn a KQL query into a scheduled analytics rule (alert) in Microsoft Sentinel.
+
+## 1. Open Microsoft Sentinel
+ Go to the **Azure Portal** (portal.azure.com) and open **Microsoft Sentinel**.  
+
+## 2. Navigate to Analytics
+. In the Sentinel navigation menu select **Configuration > Analytics**.  
+. On the Analytics page you can choose **Active rules**, **Rule templates**, or **Create**. :contentReference[oaicite:1]{index=1}
+
+## 3. Start a New Rule
+. Click **+ Create** and choose **Scheduled query rule** (or **NRT query rule** if you need near-real-time detection). :contentReference[oaicite:2]{index=2}
+   
+<img width="752" height="51" alt="Azure analytics rules " src="https://github.com/user-attachments/assets/3158a4ad-08f9-4b80-a36c-e63f935dc477" />
+
+## 4. General Information (Name & Description)
+. Give the rule a clear **Name** and **Description** explaining what it detects (e.g., “Excessive failed sign-ins — possible brute force”).
+
+   <img width="559" height="409" alt="Automation-Schedulla 2" src="https://github.com/user-attachments/assets/688d2025-3f59-4be3-ab40-93af104dc9a0" />
+
+. Set **Severity** (Informational / Low / Medium / High) and optionally add **MITRE Tactics/Techniques** to help Fusion correlation.
+
+## 5. Set the Rule Logic (KQL)
+
+ Paste your KQL query in the **Query** box.
+   
+          let lookback = 30d;
+            SigninLog
+            | where TimeGenerated >= ago(lookback)                     // Consider logs in the last 30 days
+            | where ResultType != 0                                     // Filter only failed sign-ins
+            | summarize 
+                FailedAttempts = count(),                               // Count of failed attempts
+                FirstAttempt = min(TimeGenerated),                      // First failed attempt timestamp
+                LastAttempt = max(TimeGenerated),                       // Last failed attempt timestamp
+                IPs = make_set(IPAddress, 5)                            // Collect up to 5 unique IPs
+                by UserPrincipalName
+            | where FailedAttempts >= 5                                  // Threshold for potential brute-force
+            | order by FailedAttempts desc                               // Sort by most failed attempts
+
+6. Validate & Create
+
+        Use the Review + create tab — Microsoft Sentinel will automatically validate your analytics rule configuration.
+        
+        Review all rule settings
+        
+        Fix any validation errors shown in the wizard
+        
+        When everything is correct, click Create to finalize and activate the rule
+
+ <img width="896" height="406" alt="Automation-Schedulla review and created " src="https://github.com/user-attachments/assets/4c974e71-b767-44c7-a486-cf0f1eeef2de" />
+
+
+
+
+
+
+
+
+
