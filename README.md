@@ -124,13 +124,14 @@ The goal is to provide a complete **identity-focused detection workflow** that h
         **Conclusion:**  
         This appears to be an isolated failed login with no immediate signs of malicious activity. Continued monitoring is recommended—especially for repeated failures or unusual login patterns.
 
+This incident involves a failed sign-in attempt to the Azure Portal. The screenshot shows that an invalid password was used, indicating a potential unauthorized access attempt 
 
-<img width="668" height="362" alt="Failed login for all user" src="https://github.com/user-attachments/assets/e304d486-11f6-48a5-ac2e-a383d12c2659" />
+<img width="1000" height="800" alt="Failed login for all user" src="https://github.com/user-attachments/assets/e304d486-11f6-48a5-ac2e-a383d12c2659" />
 
+---
+# Detecting and Tracking Role Assignment Modifications in Azure Activity Logs
 
-
-Detect Role Assignment Changes in Azure Activity Logs
-    
+    ``kql
     // 🔍 Search Azure Activity Logs for any role assignment changes
     AzureActivity
     // 🎯 Filter only events where someone creates or modifies a role assignment
@@ -142,79 +143,78 @@ Detect Role Assignment Changes in Azure Activity Logs
         Claims,               // 🪪 Token identity details (tenant, appId, issuer, etc.)
         ActivityStatusValue,  // ✅ Whether the operation succeeded or failed
         ResourceId            // 📍 Resource impacted (subscription, RG, VM, etc.)
+---
+  # 🛑 Incident Summary – Unauthorized-Looking VM Deletion  
+    ### *(Validated as Authorized Activity)*
+    
+    ## 📌 Overview
+    On **December 9, 2025**, Azure Activity Logs recorded a `roleAssignments/write` operation followed by **virtual machine deletion activity**. At first glance, this appeared suspicious and raised concerns about potential unauthorized privilege escalation or malicious administrative action.
+    
+    A full investigation was conducted to determine **who initiated the role change**, **which tenant the identity belonged to**, and whether the permissions used were **legitimate**.
+    
+    ---
+    
+    ## 🔍 Key Findings
+    
+    ### ✔️ 1. Role Assignment Event Origin
+    A successful `roleAssignments/write` event was observed:
+    
+    - **Time (UTC):** 2025-12-09T00:51:43Z  
+    - **Identity Type:** Service Principal (Application)  
+    - **Caller Object ID:** `5deb2a08-7269-47d6-896b-8bc52d396466`  
+    - **AppId:** `84ca03a6-49c1-42a2-b903-df42980167f6`  
+    
+    Token and claim validation confirmed the activity originated from a **legitimate Azure AD service principal**.
+    
+    ---
+    
+    ### ✔️ 2. Tenant Verification
+    The caller identity was confirmed to belong to the correct tenant:
+    
+    - **Tenant ID:** `939e93f3-04f6-479d-82ff-345c231abb4d`  
+    - **Issuer (iss):** `https://sts.windows.net/<tenantID>/`  
+    - **Audience (aud):** `https://management.azure.com`  
+    
+    This confirms the activity came from **within the same Microsoft Entra tenant**, not from an external or cross-tenant source.
+    
+    ---
+    
+    ### ✔️ 3. Permission Validation
+    The service principal is a member of an **authorized Azure AD group**:
+    
+    - **Group ID:** `b1cfafda-2028-40b9-bd3a-455b54514dec`
+    
+    This group has elevated IAM permissions, including:
+    
+    - Virtual machine deletion  
+    - Network resource deletion  
+    - Resource group–level administrative actions  
+    
+    Since these permissions were already assigned, both the **role assignment** and **VM deletion** were expected actions and succeeded without error.
+    
+    ---
+    
+    ### ✔️ 4. No Indicators of Malicious Activity
+    During the review:
+    
+    - All token claims were valid and signed by Microsoft  
+    - The identity and tenant alignment were correct  
+    - No suspicious IP addresses or external actors were involved  
+    - No unexpected privilege escalation occurred  
+    
+    The activity aligns with **normal, authorized administrative operations** performed by a trusted service principal.
+    
+    ---
+    
+    ## 🧭 Conclusion
+    The investigation confirms that the VM deletion was performed by a **legitimately authorized identity** within the correct tenant. The service principal had the required role assignments and IAM permissions to perform this action.
+    
+    **This event is categorized as Expected Administrative Activity, not a security incident.**
+
+
+Here are the permissions assigned to the user after reviewing the Azure role assignments:
 
 <img width="856" height="395" alt="Permission for Azure-acitiviy" src="https://github.com/user-attachments/assets/96e1859c-3f9c-4df0-9839-4a056a85c590" />
-
-# 🛑 Incident Summary – Unauthorized-Looking VM Deletion  
-### *(Validated as Authorized Activity)*
-
-## 📌 Overview
-On **December 9, 2025**, Azure Activity Logs recorded a `roleAssignments/write` operation followed by **virtual machine deletion activity**. At first glance, this appeared suspicious and raised concerns about potential unauthorized privilege escalation or malicious administrative action.
-
-A full investigation was conducted to determine **who initiated the role change**, **which tenant the identity belonged to**, and whether the permissions used were **legitimate**.
-
----
-
-## 🔍 Key Findings
-
-### ✔️ 1. Role Assignment Event Origin
-A successful `roleAssignments/write` event was observed:
-
-- **Time (UTC):** 2025-12-09T00:51:43Z  
-- **Identity Type:** Service Principal (Application)  
-- **Caller Object ID:** `5deb2a08-7269-47d6-896b-8b396466`  
-- **AppId:** `84ca03a6-49c1-42a2-b903-42980167f6`  
-
-Token and claim validation confirmed the activity originated from a **legitimate Azure AD service principal**.
-
----
-
-### ✔️ 2. Tenant Verification
-The caller identity was confirmed to belong to the correct tenant:
-
-- **Tenant ID:** `939e93f3-04f6-479d-82ff-345c24d`  
-- **Issuer (iss):** `https://sts.windows.net/<tenantID>/`  
-- **Audience (aud):** `https://management.azure.com`  
-
-This proves the activity came from **within the same Microsoft Entra tenant**, not from an external or cross-tenant source.
-
----
-
-### ✔️ 3. Permission Validation
-The service principal is a member of an **authorized Azure AD group**:
-
-- **Group ID:** `b1cfafda-2028-40b9-a-455b54514dec`
-
-This group has elevated IAM permissions, including:
-
-- Virtual machine deletion  
-- Network resource deletion  
-- Resource group–level administrative actions  
-
-Because these permissions were already assigned, both the **role assignment action** and the **VM deletion** were expected behaviors and succeeded without error.
-
----
-
-### ✔️ 4. No Indicators of Malicious Activity
-During the review:
-
-- All token claims were valid and signed by Microsoft  
-- The identity and tenant alignment were correct  
-- No suspicious IP addresses or external actors were involved  
-- No privilege escalation outside expected permissions occurred  
-
-The activity aligns with **normal, authorized administrative operations** performed by a trusted service principal.
-
----
-
-## 🧭 Conclusion
-The investigation confirms that the VM deletion was performed by a **legitimately authorized identity** within the correct tenant. The service principal had the required role assignments and IAM permissions to perform this action.
-
-**This event is categorized as Expected Administrative Activity, not a security incident.**
-
-
-
-
 
 
 
