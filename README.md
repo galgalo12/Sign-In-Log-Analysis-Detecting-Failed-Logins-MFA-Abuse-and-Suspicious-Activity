@@ -217,8 +217,31 @@ Here are the permissions assigned to the user after reviewing the Azure role ass
 <img width="856" height="395" alt="Permission for Azure-acitiviy" src="https://github.com/user-attachments/assets/96e1859c-3f9c-4df0-9839-4a056a85c590" />
 
 
+##### Potential Impossible Travel ###
 
+📌 KQL Query: Count Sign-in Events per User + Countries Logged In From
+```kql
+    // Filter sign-in logs for the last 30 days
+    SigninLogs
+    | where TimeGenerated > ago(30d)
+    
+    // Keep only the username and location fields
+    | project UserPrincipalName, LocationDetails
+    
+    // Parse the JSON field "LocationDetails"
+    | extend Loc = parse_json(LocationDetails)
+    
+    // Extract the user's country from the parsed JSON
+    | extend Country = tostring(Loc.countryOrRegion)
+    
+    // Count how many total sign-ins each user has
+    // Collect all countries they logged in from
+    | summarize Count = count(), Countries = make_set(Country) by UserPrincipalName
+    
+    // Sort users by highest number of sign-ins
+    | order by Count desc
+```
+Here is the screenshot I captured after reviewing Azure Sentinel to investigate the impossible-travel sign-ins originating from different countries. I will continue the investigation to verify whether the user bypassed any Conditional Access policies, and also confirm if the user submitted a ticket indicating they were working outside the country during this activity
 
-
-
+<img width="557" height="233" alt="impossible trave" src="https://github.com/user-attachments/assets/c9499bd5-ca43-4bda-adba-c68097143e73" />
 
