@@ -41,8 +41,8 @@ The goal is to provide a complete **identity-focused detection workflow** that h
           ResultDescription,ResultType,LocationDetails,DeviceDetail
     | order by TimeGenerated des
 
-    
-    
+### Here is a screenshot of a successful sign-in for a user who met all access policy requirements and completed multi-factor authentication (MFA)    
+
   <img width="668" height="361" alt="successful login" src="https://github.com/user-attachments/assets/72fb62a7-09e3-403e-81d2-b40db16d0a9a" />
 
 
